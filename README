@@ -33,3 +33,12 @@ and can be overridden by passing the "name" parameter.
 The sendHeaders attribute will allow you to pass a structure that contains the
 headers that will be applied to the message. Attribute values will be over
 written with values from sendHeaders (i.e., MailerID, ReplyTo, FailTo values).
+
+INSTALLATION:
+
+Railo: 
+Copy the included Java AWS SDK jar file into your Railo classpath. On linux this
+will be /opt/railo/lib if you used the installer. Restart Railo to load the 
+library.
+
+Has not been tested on ACF.
