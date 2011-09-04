@@ -1,0 +1,35 @@
+cf_sesmail
+
+ABOUT:
+cf_sesmail is a custom tag to make sending emails through the Amazon SES 
+gateway as painless as possible. I have tried to match the attributes
+as close to cfmail as possible so it would be easy to use it as a drop in
+replacement.
+
+USAGE:
+
+<cf_sesmail from="user@domain" to="user@domain" subject="test" credentials="/path/to/file">
+Mail body
+</cf_sesmail>
+
+ATTRIBUTES:
+
+From		String	Required (email address)
+To		String	Required (comma separated list of email addresses)
+CC		String 	(comma separated list of email addresses)
+BCC		String	(comma separated list of email addresses)
+FailTo		String	(email address)
+ReplyTo		String	(email address)
+Subject		String 	Required
+MailerID	String	(this value is the User-Agent header, default:cf_sesmail)
+EndPoint	String 	(not currently used)
+Credentials	String	Required
+Name		String	(variable to store results to)
+SendHeaders	Struct	
+
+When the tag is called it stores the results in a variables called "sesResults"
+and can be overridden by passing the "name" parameter.
+
+The sendHeaders attribute will allow you to pass a structure that contains the
+headers that will be applied to the message. Attribute values will be over
+written with values from sendHeaders (i.e., MailerID, ReplyTo, FailTo values).
