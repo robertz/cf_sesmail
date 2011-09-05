@@ -2,7 +2,7 @@ component {
 /*
 * Project: mailses
 * Author : Robert Zehnder
-* Date   : 9/2/2011
+* Version: 0.1.2011.09.04
 * Purpose: cfmail-like implementation to make it easier to send emails through Amazon Simple Email Service
 */
  this.metaData.attributeType = "fixed";
