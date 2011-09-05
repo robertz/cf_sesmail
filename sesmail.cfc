@@ -1,8 +1,8 @@
 component {
 /*
-* Project: sesmail
+* Project: mailses
 * Author : Robert Zehnder
-* Version: 0.1.2011.9.04
+* Date   : 9/2/2011
 * Purpose: cfmail-like implementation to make it easier to send emails through Amazon Simple Email Service
 */
  this.metaData.attributeType = "fixed";
@@ -36,7 +36,7 @@ component {
   var emailService = createObject("java", "com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient").init(creds);
   var props = createObject("java", "java.util.Properties");
   var verifyRequest = createObject("java", "com.amazonaws.services.simpleemail.model.VerifyEmailAddressRequest").withEmailAddress(attributes.from);
-  var sendHeaders = { "User-Agent" : attributes.mailerID };
+  if(len(attributes.endPoint)) emailService.setEndPoint(attributes.endPoint);
   
   // Set properties for establishing connection
   props.setProperty("mail.transport.protocol", "aws");
@@ -69,61 +69,68 @@ component {
     }
     throw("Email address has not been validated.  Please check the email on account " & attributes.from & " to complete validation.");
    }
+   else{
+   	
+	mailTransport.connect();
+	
+	messageObj.setFrom(messageFrom);
+	for(i = 1; i <= arrayLen(messageTo); i++){
+	 messageObj.addRecipient(messageRecipientType.TO, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageTo[i])));
+	}
+	   
+	if(arrayLen(messageCC)){
+	 for(i = 1; i <= arrayLen(messageCC); i++){
+	  messageObj.addRecipient(messageRecipientType.CC, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageCC[i])));
+	 }
+	}
+	   
+	if(arrayLen(messageBCC)){
+	 for(i = 1; i <= arrayLen(messageBCC); i++){
+	  messageObj.addRecipient(messageRecipientType.BCC, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageBCC[i])));
+	 }
+	}
+	
+	// If reply-to was specified, set the reply-to header    
+	if(len(attributes.replyTo)){
+	 messageObj.addHeader("Reply-To", createObject("java", "javax.mail.internet.InternetAddress").init(attributes.replyTo).toString());
+	}
+	
+	// If fail-to address was specified, set the return-path header   
+	if(len(attributes.failTo)){
+	 messageObj.addHeader("Return-Path", createObject("java", "javax.mail.internet.InternetAddress").init(attributes.failTo).toString());	
+	}
+	
+	// If the mailerID was specified, set the user-agent header   
+	if(len(attributes.mailerID)){
+	 messageObj.addHeader("User-Agent", attributes.mailerID);	
+	}
+	
+	// if the sendHeaders attribute was specified, set message headers. This may override attribute values.   
+	if(len(structKeyList(attributes.sendHeaders))){
+	 for(i in attributes.sendHeaders){
+	  messageObj.addHeader(i, attributes.sendHeaders[i]);
+	 }   
+	}
+	
+	messageObj.setSubject(messageSubject);
+	messageObj.setContent(messageBody, "text/html");
+	messageObj.saveChanges();
+	
+	mailTransport.sendMessage(messageObj, JavaCast("null", 0));
+	
+	mailTransport.close();
+	   
+	results['attributes'] = attributes;
+	results['max24HourSend'] = emailService.getSendQuota().getMax24HourSend();
+	results['getMaxSendRate'] = emailService.getSendQuota().getMaxSendRate();
+	results['getSentLast24Hours'] = emailService.getSendQuota().getSentLast24Hours();
+	   
+	caller[attributes.name] = results;
+   } //end else
    
-   mailTransport.connect();
-
-   messageObj.setFrom(messageFrom);
-   for(i = 1; i <= arrayLen(messageTo); i++){
-    messageObj.addRecipient(messageRecipientType.TO, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageTo[i])));
-   }
-   
-   if(arrayLen(messageCC)){
-    for(i = 1; i <= arrayLen(messageCC); i++){
-     messageObj.addRecipient(messageRecipientType.CC, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageCC[i])));
-    }
-   }
-   
-   if(arrayLen(messageBCC)){
-    for(i = 1; i <= arrayLen(messageBCC); i++){
-     messageObj.addRecipient(messageRecipientType.BCC, createObject("java", "javax.mail.internet.InternetAddress").init(trim(messageBCC[i])));
-    }
-   }
-   
-   if(len(attributes.replyTo)){
-   	messageObj.addHeader("Reply-To", createObject("java", "javax.mail.internet.InternetAddress").init(attributes.replyTo).toString());
-   }
-   
-   if(len(attributes.failTo)){
-    messageObj.addHeader("Return-Path", createObject("java", "javax.mail.internet.InternetAddress").init(attributes.failTo).toString());	
-   }
-   
-   if(len(attributes.mailerID)){
-    messageObj.addHeader("User-Agent", attributes.mailerID);	
-   }
-   
-   if(len(structKeyList(attributes.sendHeaders))){
-    for(i in attributes.sendHeaders){
-     messageObj.addHeader(i, attributes.sendHeaders[i]);
-    }   
-   }
-   
-   messageObj.setSubject(messageSubject);
-   messageObj.setContent(messageBody, "text/html");
-   messageObj.saveChanges();
-
-   mailTransport.sendMessage(messageObj, JavaCast("null", 0));
-
-   mailTransport.close();
-   
-   results['attributes'] = attributes;
-   results['max24HourSend'] = emailService.getSendQuota().getMax24HourSend();
-   results['getMaxSendRate'] = emailService.getSendQuota().getMaxSendRate();
-   results['getSentLast24Hours'] = emailService.getSendQuota().getSentLast24Hours();
-   
-   caller[attributes.name] = results;
   }
   catch (Any e){
-   throw("Error sending message.");
+   throw( type = "error", message = "There was an error sending the message", detail = e.message);
   }
   return false;
  }
